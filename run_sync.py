@@ -57,8 +57,9 @@ if (PPS_OUTPUT_GPIO != -1):
     print ("Output PPS signal on GPIO%d"%PPS_OUTPUT_GPIO)
 
 for output_trigger_gpio, output_trigger_frequency, output_trigger_phase in zip(TRIGGER_GPIOS, TRIGGER_FREQUENCIES, TRIGGER_PHASES):
-    generator.add_trigger_gpio(output_trigger_gpio, output_trigger_frequency, output_trigger_phase)
-    print ("Output trigger signal on GPIO%d with frequency %dHz and phase %d degrees"%(output_trigger_gpio, output_trigger_frequency, output_trigger_phase))
+    if output_trigger_gpio != -1:
+        generator.add_trigger_gpio(output_trigger_gpio, output_trigger_frequency, output_trigger_phase)
+        print ("Output trigger signal on GPIO%d with frequency %dHz and phase %d degrees"%(output_trigger_gpio, output_trigger_frequency, output_trigger_phase))
 
 if USE_SYNC and PPS_INPUT_GPIO != -1 and PPS_OUTPUT_GPIO != -1:
     generator.start_PPS_input_sychronization()
