@@ -21,6 +21,7 @@
 #
 
 import pigpio
+import utils
 import socket
 import time
 
@@ -87,14 +88,19 @@ class waveform_engine:
         Spoof messages will be sent directly after the output PPS rising edges.
         The output PPS signal must be configured for this to operate.
         """
-        if self.PPS_output_gpio != -1:
+        if self.PPS_output_gpio != -1 and utils.check_ip_port_open(host, port):
             self.sensor_port = port
             self.sensor_IP = host
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.socket.connect((host, port))
-            self.spoof_NMEA = True
-            if not self.callbacks_set:
-                self.PPS_output_callback = self.pi.callback(self.PPS_output_gpio, pigpio.RISING_EDGE, self.wave_callback)
+            try:
+                self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.socket.settimeout(1)
+                self.socket.connect((host, port))
+                self.spoof_NMEA = True
+                if not self.callbacks_set:
+                    self.PPS_output_callback = self.pi.callback(self.PPS_output_gpio, pigpio.RISING_EDGE, self.wave_callback)
+            except:
+                self.spoof_NMEA = False
+                print("Could not reach the device on {}:{}. Not spoofing.". format(host, port))
         else:
             print("Output PPS must be configured for NMEA spoofing")
 
@@ -102,7 +108,7 @@ class waveform_engine:
         """
         Stops the sending of spoof NMEA messages.
         """
-        if self.spoof_NMEA:
+        if self.spoof_NMEA and self.socket is not None:
             self.socket.close()
             if not self.callbacks_set:
                 self.PPS_output_callback.cancel()
@@ -199,7 +205,7 @@ class waveform_engine:
         """
         Starts synchronization by enabling the callback functions for wave timing.
         """
-        if (self.PPS_input_gpio != -1) and (self.PPS_input_gpio != -1) and not self.callbacks_set:
+        if (self.PPS_input_gpio != -1) and not self.callbacks_set:
             self.PPS_input_callback = self.pi.callback(self.PPS_input_gpio, pigpio.RISING_EDGE, self.wave_callback)
             self.PPS_output_callback = self.pi.callback(self.PPS_output_gpio, pigpio.RISING_EDGE, self.wave_callback)
             self.callbacks_set = True
@@ -255,8 +261,10 @@ class waveform_engine:
             if self.spoof_NMEA:
                 localticks = time.time() #NOTE: this is only accurate to ~100 micros. Have to fix this later.
                 localtime = time.localtime(localticks)
-                message = b'$GPGGA,%02d%02d%02d.%03d,4321.428,S,17242.305,E,1,12,1.0,0.0,M,0.0,M,,*70\r\n'%(localtime.tm_hour,localtime.tm_min,localtime.tm_sec, (localticks % 1)*1000)
-                self.socket.sendall(message)
+                message = b'$GPGGA,%02d%02d%02d.%03d,4321.428,S,17242.305,E,1,12,1.0,0.0,M,0.0,M,,'%(localtime.tm_hour,localtime.tm_min,localtime.tm_sec, (localticks % 1)*1000)
+                checksum = utils.get_nmea_checksum(message)
+                nmea_message = message + '*' + checksum + '\r\n'
+                self.socket.sendall(nmea_message)
 
     def update(self):
         """
