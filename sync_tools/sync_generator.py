@@ -96,8 +96,6 @@ class waveform_engine:
                 self.socket.settimeout(1)
                 self.socket.connect((host, port))
                 self.spoof_NMEA = True
-                if not self.callbacks_set:
-                    self.PPS_output_callback = self.pi.callback(self.PPS_output_gpio, pigpio.RISING_EDGE, self.wave_callback)
             except:
                 self.spoof_NMEA = False
                 print("Could not reach the device on {}:{}. Not spoofing.". format(host, port))
