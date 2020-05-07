@@ -45,7 +45,7 @@ class waveform_engine:
         self.PPS_output_tick = 0
         self.PPS_output_offset = 0.0              # PPS offset in microseconds
         self.PPS_slack_threshold = 5              # PPS slack limit requiring correction in microseconds
-        self.PPS_overtime_reject = 100000.0       # Reject PPS frequency measurement if it has been too long (GPS lost)
+        self.PPS_overtime_reject = 1100000.0      # Reject PPS frequency measurement if it has been too long (GPS lost)
 
 
         self.trigger_output_gpio = []
@@ -71,7 +71,7 @@ class waveform_engine:
         If not set, no input PPS will be used.
         """
         self.PPS_input_gpio = gpio
-        self.pi.set_mode(gpio, pigpio.INPUT) # CHANGE LATER
+        self.pi.set_mode(gpio, pigpio.INPUT)
 
     def set_PPS_output_gpio(self, gpio):
         """
@@ -136,7 +136,7 @@ class waveform_engine:
 
     def set_PPS_overtime_reject_threshold(self, overtime_reject):
         """
-        Sets the time in milliseconds to wait for an overdue PPS edge before rejecting the next edge.
+        Sets the longest acceptable PPS cycle time to accept as valid input.
         This prevents incorrect PPS frequency measurement when a PPS signal is lost or clock overruns.
         The change takes affect when the update function is called.
         """
@@ -229,7 +229,7 @@ class waveform_engine:
         if gpio == self.PPS_input_gpio:
             if self.PPS_input_tick > 0:
                 time_since_last_tick = tick - self.PPS_input_tick
-                if time_since_last_tick < self.PPS_input_cycle_time + self.PPS_overtime_reject:
+                if time_since_last_tick < self.PPS_overtime_reject:
                     self.PPS_input_cycle_time = time_since_last_tick
                     self.PPS_output_cycle_time = self.PPS_input_cycle_time
                 #print ('Cycle time: %d'%self.PPS_output_cycle_time)
