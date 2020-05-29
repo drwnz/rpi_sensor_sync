@@ -46,6 +46,7 @@ class serial_forward (threading.Thread):
         threading.Thread.__init__(self)
 
     def run(self):
+        serial_connected = False
         try:
             serial_input = serial.Serial(
                 port = self.input_port,
@@ -55,16 +56,20 @@ class serial_forward (threading.Thread):
                 bytesize = self.bytesize,
                 timeout = self.timeout
             )
+            serial_connected = True
         except:
-            print("Could not open port on {}. Not forwarding serial NMEA messages". format(port))
+            print("Could not open port on {}. Not forwarding serial NMEA messages". format(self.input_port))
 
-        while 1:
-            nmea_message = serial_input.readline()
-            if nmea_message[1 : 6] == "GPGGA" or nmea_message[1 : 6] == "GPRMC":
-                for destination_socket in self.destination_sockets:
-                    destination_socket.sendall(nmea_message)
-            else:
-                print("Invalid NMEA message received on serial port")
+        if serial_connected and len(self.destination_sockets) > 0:
+            while 1:
+                nmea_message = serial_input.readline()
+                if nmea_message[1 : 6] == "GPGGA" or nmea_message[1 : 6] == "GPRMC":
+                    for destination_socket in self.destination_sockets:
+                        destination_socket.sendall(nmea_message)
+                else:
+                    print("Invalid NMEA message received on serial port")
+        else:
+            print ("NMEA forwarding connections unsuccessful, exiting")            
 
     def configure_serial(self, port, baudrate, parity, stopbits, bytesize, timeout):
         """
