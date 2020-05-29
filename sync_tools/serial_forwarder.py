@@ -46,14 +46,18 @@ class serial_forward (threading.Thread):
         threading.Thread.__init__(self)
 
     def run(self):
-        serial_input = serial.Serial(
-            port = self.input_port
-            baudrate = self.baudrate,
-            parity = self.parity,
-            stopbits = self.stopbits,
-            bytesize = self.bytesize,
-            timeout = self.timeout
-        )
+        try:
+            serial_input = serial.Serial(
+                port = self.input_port,
+                baudrate = self.baudrate,
+                parity = self.parity,
+                stopbits = self.stopbits,
+                bytesize = self.bytesize,
+                timeout = self.timeout
+            )
+        except:
+            print("Could not open port on {}. Not forwarding serial NMEA messages". format(port))
+
         while 1:
             nmea_message = serial_input.readline()
             if nmea_message[1 : 6] == "GPGGA" or nmea_message[1 : 6] == "GPRMC":
@@ -88,4 +92,4 @@ class serial_forward (threading.Thread):
             except:
                 print("Could not reach the device on {}:{}. Not forwarding serial NMEA messages". format(host, port))
         else:
-            print("Could not reach the device on {}:{}. Is the socket already in us? Not forwarding serial NMEA messages". format(host, port))
+            print("Could not reach the device on {}:{}. Is the socket already in use? Not forwarding serial NMEA messages". format(host, port))

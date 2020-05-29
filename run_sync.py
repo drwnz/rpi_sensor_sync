@@ -47,9 +47,10 @@ if cfg.SEND_REAL_NMEA:
         if nmea_destinaton_host != -1:
             nmea_forwarder.add_destination(nmea_destinaton_host, nmea_destination_port)
 
-    generator.update()
     nmea_forwarder.daemon = True
     nmea_forwarder.start()
+
+generator.update()
 
 while True:
     cancel = raw_input("To stop signal IO, press 'q' then 'enter' at any time ")
