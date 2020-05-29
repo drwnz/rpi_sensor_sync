@@ -60,9 +60,7 @@ class waveform_engine:
         self.PPS_input_callback = None
         self.PPS_output_callback = None
 
-        self.sensor_port = 10110                    # Default for Velodyne
-        self.sensor_IP = None
-        self.socket = None
+        self.sensor_sockets = []
         self.spoof_NMEA = False
 
     def set_PPS_input_gpio(self, gpio):
@@ -82,35 +80,34 @@ class waveform_engine:
         self.PPS_output_gpio = gpio
         self.pi.set_mode(gpio, pigpio.OUTPUT)
 
-    def start_NMEA_spoof(self, port, host):
+    def add_NMEA_spoof_device(self, host, port):
         """
         Starts the sending of spoof NMEA messages to be sent to a sensor over ethernet.
         Spoof messages will be sent directly after the output PPS rising edges.
         The output PPS signal must be configured for this to operate.
         """
-        if self.PPS_output_gpio != -1 and utils.check_ip_port_open(host, port):
-            self.sensor_port = port
-            self.sensor_IP = host
+        if self.PPS_output_gpio != -1:
             try:
-                self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                self.socket.settimeout(1)
-                self.socket.connect((host, port))
+                sensor_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sensor_socket.settimeout(1)
+                sensor_socket.connect((host, port))
+                self.sensor_sockets.append(sensor_socket)
                 self.spoof_NMEA = True
             except:
-                self.spoof_NMEA = False
                 print("Could not reach the device on {}:{}. Not spoofing.". format(host, port))
         else:
             print("Output PPS must be configured for NMEA spoofing")
 
-    def stop_NMEA_spoof(self):
+    def stop_NMEA_spoofing(self):
         """
         Stops the sending of spoof NMEA messages.
         """
-        if self.spoof_NMEA and self.socket is not None:
-            self.socket.close()
-            if not self.callbacks_set:
-                self.PPS_output_callback.cancel()
-            self.spoof_NMEA = False
+        for sensor_socket in self.sensor_sockets:
+            if self.spoof_NMEA:
+                sensor_socket.close()
+        if not self.callbacks_set:
+            self.PPS_output_callback.cancel()
+        self.spoof_NMEA = False
 
     def set_PPS_output_pulse(self, pulse_time):
         """
@@ -262,7 +259,8 @@ class waveform_engine:
                 message = b'$GPGGA,%02d%02d%02d.%03d,4321.428,S,17242.305,E,1,12,1.0,0.0,M,0.0,M,,'%(localtime.tm_hour,localtime.tm_min,localtime.tm_sec, (localticks % 1)*1000)
                 checksum = utils.get_nmea_checksum(message)
                 nmea_message = message + '*' + checksum + '\r\n'
-                self.socket.sendall(nmea_message)
+                for sensor_socket in self.sensor_sockets:
+                    sensor_socket.sendall(nmea_message)
 
     def update(self):
         """

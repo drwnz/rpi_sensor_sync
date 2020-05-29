@@ -30,19 +30,19 @@ if PPS_INPUT_GPIO > 0:
     USE_SYNC = True                         # Enable synchronization to PPS input when available
 
 SEND_DUMMY_NMEA = False                     # Enable spoof NMEA messages
-SEND_REAL_NMEA = False                      # Enable forwarding of real (received from UART) NMEA messages
-
-NMEA_DESTINATION1_PORT = 10110              # Use -1 for unused
-NMEA_DESTINATION2_PORT = -1
-NMEA_DESTINATION3_PORT = -1
-NMEA_DESTINATION4_PORT = -1
-NMEA_DESTINATION5_PORT = -1
+SEND_REAL_NMEA = True                       # Enable forwarding of real (received from UART) NMEA messages
 
 NMEA_DESTINATION1_HOST = '192.168.1.201'    # Use -1 for unused
 NMEA_DESTINATION2_HOST = -1
 NMEA_DESTINATION3_HOST = -1
 NMEA_DESTINATION4_HOST = -1
 NMEA_DESTINATION5_HOST = -1
+
+NMEA_DESTINATION1_PORT = 10110              # Use -1 for unused
+NMEA_DESTINATION2_PORT = -1
+NMEA_DESTINATION3_PORT = -1
+NMEA_DESTINATION4_PORT = -1
+NMEA_DESTINATION5_PORT = -1
 
 UART_PORT = '/dev/ttyS0'
 UART_BAUDRATE = 9600

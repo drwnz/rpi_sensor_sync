@@ -22,7 +22,6 @@
 #
 
 import threading
-import utils
 import serial
 import socket
 
@@ -61,7 +60,7 @@ class serial_forward (threading.Thread):
             print("Could not open port on {}. Not forwarding serial NMEA messages". format(self.input_port))
 
         if serial_connected and len(self.destination_sockets) > 0:
-            while 1:
+            while True:
                 nmea_message = serial_input.readline()
                 if nmea_message[1 : 6] == "GPGGA" or nmea_message[1 : 6] == "GPRMC":
                     for destination_socket in self.destination_sockets:
@@ -69,7 +68,7 @@ class serial_forward (threading.Thread):
                 else:
                     print("Invalid NMEA message received on serial port")
         else:
-            print ("NMEA forwarding connections unsuccessful, exiting")            
+            print ("NMEA forwarding connections unsuccessful, exiting")
 
     def configure_serial(self, port, baudrate, parity, stopbits, bytesize, timeout):
         """
@@ -88,13 +87,10 @@ class serial_forward (threading.Thread):
         The destination host and port are checked for usability.
         """
         destination_socket = None
-        if utils.check_ip_port_open(host, port):
-            try:
-                destination_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                destination_socket.settimeout(1)
-                destination_socket.connect((host, port))
-                self.destination_sockets.append(destination_socket)
-            except:
-                print("Could not reach the device on {}:{}. Not forwarding serial NMEA messages". format(host, port))
-        else:
-            print("Could not reach the device on {}:{}. Is the socket already in use? Not forwarding serial NMEA messages". format(host, port))
+        try:
+            destination_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            destination_socket.settimeout(1)
+            destination_socket.connect((host, port))
+            self.destination_sockets.append(destination_socket)
+        except:
+            print("Could not reach the device on {}:{}. Not forwarding serial NMEA messages". format(host, port))
