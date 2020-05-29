@@ -1,23 +1,24 @@
 #!/usr/bin/env python
+import serial
 
-PPS_INPUT_GPIO = -1         # 0-31. Use -1 for inactive
-PPS_OUTPUT_GPIO = 2         # 0-31. Use -1 for inactive
+PPS_INPUT_GPIO = -1                         # 0-31. Use -1 for inactive
+PPS_OUTPUT_GPIO = 2                         # 0-31. Use -1 for inactive
 
-TRIGGER1_GPIO = 3           # 0-31. Use -1 for inactive
+TRIGGER1_GPIO = 3                           # 0-31. Use -1 for inactive
 TRIGGER2_GPIO = 4
 TRIGGER3_GPIO = 5
 TRIGGER4_GPIO = 6
 TRIGGER5_GPIO = 7
 TRIGGER6_GPIO = 8
 
-TRIGGER1_FREQUENCY = 10     # Integer number in Hertz
+TRIGGER1_FREQUENCY = 10                     # Integer number in Hertz
 TRIGGER2_FREQUENCY = 10
 TRIGGER3_FREQUENCY = 10
 TRIGGER4_FREQUENCY = 10
 TRIGGER5_FREQUENCY = 10
 TRIGGER6_FREQUENCY = 10
 
-TRIGGER1_PHASE = 0          # 0-360 in degrees
+TRIGGER1_PHASE = 0                          # 0-360 in degrees
 TRIGGER2_PHASE = 0
 TRIGGER3_PHASE = 0
 TRIGGER4_PHASE = 0
@@ -26,11 +27,29 @@ TRIGGER6_PHASE = 0
 
 USE_SYNC = False
 if PPS_INPUT_GPIO > 0:
-    USE_SYNC = True         # Enable synchronization to PPS input when available
+    USE_SYNC = True                         # Enable synchronization to PPS input when available
 
-SEND_DUMMY_NMEA = False     # Enable spoof NMEA messages
-NMEA_DESTINATION_PORT = 10110
-NMEA_DESTINATION_HOST = '192.168.1.201'
+SEND_DUMMY_NMEA = False                     # Enable spoof NMEA messages
+SEND_REAL_NMEA = False                      # Enable forwarding of real (received from UART) NMEA messages
+
+NMEA_DESTINATION1_PORT = 10110              # Use -1 for unused
+NMEA_DESTINATION2_PORT = 10110
+NMEA_DESTINATION3_PORT = 10110
+NMEA_DESTINATION4_PORT = -1
+NMEA_DESTINATION5_PORT = -1
+
+NMEA_DESTINATION1_HOST = '192.168.1.201'    # Use -1 for unused
+NMEA_DESTINATION2_HOST = '192.168.1.202'
+NMEA_DESTINATION3_HOST = '192.168.1.203'
+NMEA_DESTINATION4_HOST = -1
+NMEA_DESTINATION5_HOST = -1
+
+UART_PORT = '/dev/ttyS0'
+UART_BAUDRATE = 9600
+UART_PARITY = serial.PARITY_NONE
+UART_STOPBITS = serial.STOPBITS_ONE
+UART_BYTESIZE = serial.EIGHTBITS
+UART_TIMEOUT = 1
 
 TRIGGER_GPIOS = [TRIGGER1_GPIO, TRIGGER2_GPIO, TRIGGER3_GPIO,
                     TRIGGER4_GPIO, TRIGGER5_GPIO, TRIGGER6_GPIO]
@@ -40,3 +59,9 @@ TRIGGER_FREQUENCIES = [TRIGGER1_FREQUENCY, TRIGGER2_FREQUENCY, TRIGGER3_FREQUENC
 
 TRIGGER_PHASES = [TRIGGER1_PHASE, TRIGGER2_PHASE, TRIGGER3_PHASE,
                     TRIGGER4_PHASE, TRIGGER5_PHASE, TRIGGER6_PHASE]
+
+NMEA_DESTINATION_PORTS = [NMEA_DESTINATION1_PORT, NMEA_DESTINATION2_PORT NMEA_DESTINATION3_PORT
+                            NMEA_DESTINATION4_PORT, NMEA_DESTINATION5_PORT]
+
+NMEA_DESTINATION_HOSTS = [NMEA_DESTINATION1_HOST, NMEA_DESTINATION2_HOST NMEA_DESTINATION3_HOST
+                            NMEA_DESTINATION4_HOST, NMEA_DESTINATION5_HOST]
