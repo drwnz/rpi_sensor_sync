@@ -320,7 +320,7 @@ class waveform_engine:
         """
         self.stopped = True
         self.stop_PPS_input_sychronization()
-        self.stop_NMEA_spoof()
+        self.stop_NMEA_spoofing()
         self.pi.wave_tx_stop()
         if self.wave is not None:
             self.pi.wave_delete(self.wave)
