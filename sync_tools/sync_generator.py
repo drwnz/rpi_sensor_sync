@@ -105,8 +105,6 @@ class waveform_engine:
         for sensor_socket in self.sensor_sockets:
             if self.spoof_NMEA:
                 sensor_socket.close()
-        if not self.callbacks_set:
-            self.PPS_output_callback.cancel()
         self.spoof_NMEA = False
 
     def set_PPS_output_pulse(self, pulse_time):
