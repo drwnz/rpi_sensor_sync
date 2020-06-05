@@ -5,7 +5,7 @@ from sync_tools import sync_generator
 import sync_config as cfg
 from sync_tools import utils
 
-import signal_processor
+from signal_processor import SignalProcessor
 
 pi = pigpio.pi()
 if not pi.connected:
@@ -39,10 +39,10 @@ if cfg.SEND_DUMMY_NMEA and cfg.USE_SYNC:
 
 generator.update()
 sp = SignalProcessor()
-print ("Press Ctrl+C to stop")
-while not sp.exit_now = False:
-    print ("Shutting down signals, exiting...")
-    kill_now = False
+
+while not sp.exit_now:
+    pass
+print ("Shutting down signals, exiting...")
 
 generator.cancel()
 pi.stop()
