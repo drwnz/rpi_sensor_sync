@@ -41,7 +41,7 @@ class waveform_engine:
 
         self.PPS_output_gpio = -1
         self.PPS_output_cycle_time = 1000000.0    # PPS output cycle time in microseconds, measured
-        self.PPS_output_pulse = 200000.0          # PPS pulse width in microseconds
+        self.PPS_duty_cycle_fraction = 0.2
         self.PPS_output_tick = 0
         self.PPS_output_offset = 0.0              # PPS offset in microseconds
         self.PPS_slack_threshold = 5              # PPS slack limit requiring correction in microseconds
@@ -51,7 +51,7 @@ class waveform_engine:
         self.trigger_output_gpio = []
         self.trigger_output_frequency = []
         self.trigger_output_phase = []            # Phase difference from base (PPS) output
-        self.trigger_duty_cycle_fraction = 0.5
+        self.trigger_duty_cycle_fraction = []
 
         self.wave = None
         self.stopped = False
@@ -112,12 +112,17 @@ class waveform_engine:
                 self.PPS_output_callback.cancel()
             self.spoof_NMEA = False
 
-    def set_PPS_output_pulse(self, pulse_time):
+    def set_PPS_output_duty(self, duty):
         """
-        Sets the output PPS pulse width by specifying the pulse time in microseconds.
+        Sets the output PPS pulse width by specifying the duty cycle as a decimal fraction.
         The change takes affect when the update function is called.
         """
-        self.PPS_output_pulse = pulse_time
+        if duty > 1.0:
+            self.PPS_duty_cycle_fraction = 1.0
+        elif duty < 0:
+            self.PPS_duty_cycle_fraction = 0
+        else:
+            self.PPS_duty_cycle_fraction = duty
 
     def set_PPS_output_cycle_time(self, cycle_time):
         """
@@ -142,18 +147,25 @@ class waveform_engine:
         """
         self.PPS_overtime_reject = overtime_reject
 
-    def add_trigger_gpio(self, gpio, frequency = 1, phase = 0):
+    def add_trigger_gpio(self, gpio, frequency = 1, phase = 0, duty = 0.5):
         """
         Adds an output trigger waveform.
         Frequency must be an integer number.
         Phase must be in degrees.
+        Duty must be in a decimal fraction.
         The change takes affect when the update function is called.
         """
+        if duty > 1.0:
+            duty = 1.0
+        elif duty < 0:
+            duty = 0
+
         gpio_used = False
         for i in range(len(self.trigger_output_gpio)):
             if self.trigger_output_gpio[i] == gpio:
                 self.trigger_output_frequency[i] = frequency
                 self.trigger_output_phase[i] = phase
+                self.trigger_duty_cycle_fraction[i] = duty
                 self.pi.set_mode(gpio, pigpio.OUTPUT)
                 gpio_used = True
 
@@ -161,6 +173,7 @@ class waveform_engine:
             self.trigger_output_gpio.append(gpio)
             self.trigger_output_frequency.append(frequency)
             self.trigger_output_phase.append(phase)
+            self.trigger_duty_cycle_fraction.append(duty)
             self.pi.set_mode(gpio, pigpio.OUTPUT)
 
         # Enable usage even without a 1PPS output
@@ -177,6 +190,7 @@ class waveform_engine:
             if self.trigger_output_gpio[i] == gpio:
                 del self.trigger_output_frequency[i]
                 del self.trigger_output_phase[i]
+                del self.trigger_duty_cycle_fraction[i]
                 del self.trigger_output_gpio[i]
 
     def update_trigger_gpio_frequency(self, gpio, frequency):
@@ -198,6 +212,16 @@ class waveform_engine:
         for i in range(len(self.trigger_output_gpio)):
             if self.trigger_output_gpio[i] == gpio:
                 self.trigger_output_phase[i] = phase
+
+    def update_trigger_gpio_duty(self, gpio, duty):
+        """
+        Sets the duty of an output trigger waveform.
+        The output must already exist.
+        The change takes affect when the update function is called.
+        """
+        for i in range(len(self.trigger_output_gpio)):
+            if self.trigger_output_gpio[i] == gpio:
+                self.trigger_duty_cycle_fraction[i] = duty
 
     def start_PPS_input_sychronization(self):
         """
@@ -268,27 +292,25 @@ class waveform_engine:
         """
         Updates the waveform for each GPIO to reflect the current settings.
         """
-        if self.PPS_output_pulse > self.PPS_output_cycle_time:
-            self.PPS_output_pulse = self.PPS_output_cycle_time
-
+        on_time = self.PPS_duty_cycle_fraction * self.PPS_output_cycle_time
         if self.PPS_output_gpio != -1:
-            if self.PPS_output_offset >= self.PPS_output_pulse:
+            if self.PPS_output_offset >= on_time:
                 self.pi.wave_add_generic([
                     pigpio.pulse(0, 1<<self.PPS_output_gpio, self.PPS_output_cycle_time - self.PPS_output_offset),
-                    pigpio.pulse(1<<self.PPS_output_gpio, 0, self.PPS_output_pulse),
-                    pigpio.pulse(0, 1<<self.PPS_output_gpio, self.PPS_output_offset - self.PPS_output_pulse)
+                    pigpio.pulse(1<<self.PPS_output_gpio, 0, on_time),
+                    pigpio.pulse(0, 1<<self.PPS_output_gpio, self.PPS_output_offset - on_time)
                 ])
             else:
                 self.pi.wave_add_generic([
-                    pigpio.pulse(1<<self.PPS_output_gpio, 0, self.PPS_output_pulse - self.PPS_output_offset),
-                    pigpio.pulse(0, 1<<self.PPS_output_gpio, self.PPS_output_cycle_time - self.PPS_output_pulse),
+                    pigpio.pulse(1<<self.PPS_output_gpio, 0, on_time - self.PPS_output_offset),
+                    pigpio.pulse(0, 1<<self.PPS_output_gpio, self.PPS_output_cycle_time - on_time),
                     pigpio.pulse(1<<self.PPS_output_gpio, 0, self.PPS_output_offset)
                 ])
 
-        for gpio, frequency, phase in zip(self.trigger_output_gpio, self.trigger_output_frequency, self.trigger_output_phase):
+        for gpio, frequency, phase, duty in zip(self.trigger_output_gpio, self.trigger_output_frequency, self.trigger_output_phase, self.trigger_duty_cycle_fraction):
             trigger_cycle_time = self.PPS_output_cycle_time/frequency
             offset = (self.PPS_output_offset + (self.PPS_output_cycle_time * (360 - phase/frequency) / 360)) % trigger_cycle_time
-            on_time = self.trigger_duty_cycle_fraction*trigger_cycle_time
+            on_time = duty*trigger_cycle_time
             waves = []
             for i in range(frequency):
                 if offset >= on_time:
