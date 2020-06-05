@@ -1,11 +1,11 @@
 #!/usr/bin/env python
-
 import pigpio
 from sync_tools import sync_generator
 
 import sync_config as cfg
 from sync_tools import utils
 
+from signal_processor import SignalProcessor
 
 pi = pigpio.pi()
 if not pi.connected:
@@ -38,12 +38,11 @@ if cfg.SEND_DUMMY_NMEA and cfg.USE_SYNC:
         print ("Device with IP: {} on port: {} is not responding. Cannot spoof NMEA sentence.".format(cfg.NMEA_DESTINATION_HOST, cfg.NMEA_DESTINATION_PORT))
 
 generator.update()
+sp = SignalProcessor()
 
-while True:
-    cancel = raw_input("To stop signal IO, press 'q' then 'enter' at any time ")
-    if cancel == 'q' :
-        print ("Shutting down signals, exiting...")
-        break
+while not sp.exit_now:
+    pass
+print ("Shutting down signals, exiting...")
 
 generator.cancel()
 pi.stop()
