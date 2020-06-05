@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python -u
 import pigpio
 from sync_tools import sync_generator
 
