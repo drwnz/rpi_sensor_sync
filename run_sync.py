@@ -1,11 +1,11 @@
-#!/usr/bin/env python
-
+#!/usr/bin/python -u
 import pigpio
 import sync_config as cfg
 from sync_tools import sync_generator
 from sync_tools import serial_forwarder
 from sync_tools import utils
 
+from signal_processor import SignalProcessor
 
 pi = pigpio.pi()
 if not pi.connected:
@@ -19,12 +19,13 @@ if cfg.PPS_INPUT_GPIO != -1:
 
 if cfg.PPS_OUTPUT_GPIO != -1:
     generator.set_PPS_output_gpio(cfg.PPS_OUTPUT_GPIO)
-    print("Output PPS signal on GPIO%d"%cfg.PPS_OUTPUT_GPIO)
+    generator.set_PPS_output_duty(cfg.PPS_OUTPUT_DUTY)
+    print ("Output PPS signal on GPIO%d with duty cycle of %.2f"%(cfg.PPS_OUTPUT_GPIO, cfg.PPS_OUTPUT_DUTY))
 
-for output_trigger_gpio, output_trigger_frequency, output_trigger_phase in zip(cfg.TRIGGER_GPIOS, cfg.TRIGGER_FREQUENCIES, cfg.TRIGGER_PHASES):
+for output_trigger_gpio, output_trigger_frequency, output_trigger_phase, output_trigger_duty in zip(cfg.TRIGGER_GPIOS, cfg.TRIGGER_FREQUENCIES, cfg.TRIGGER_PHASES, cfg.TRIGGER_DUTYS):
     if output_trigger_gpio != -1:
-        generator.add_trigger_gpio(output_trigger_gpio, output_trigger_frequency, output_trigger_phase)
-        print("Output trigger signal on GPIO%d with frequency %dHz and phase %d degrees"%(output_trigger_gpio, output_trigger_frequency, output_trigger_phase))
+        generator.add_trigger_gpio(output_trigger_gpio, output_trigger_frequency, output_trigger_phase, output_trigger_duty)
+        print ("Output trigger signal on GPIO%d with frequency %dHz, phase %d degrees and duty cycle of %.2f"%(output_trigger_gpio, output_trigger_frequency, output_trigger_phase, output_trigger_duty))
 
 if cfg.USE_SYNC and cfg.PPS_INPUT_GPIO != -1 and cfg.PPS_OUTPUT_GPIO != -1:
     generator.start_PPS_input_sychronization()
@@ -56,12 +57,11 @@ if cfg.SEND_REAL_NMEA:
     nmea_forwarder.start()
 
 generator.update()
+sp = SignalProcessor()
 
-while True:
-    cancel = raw_input("To stop signal IO, press 'q' then 'enter' at any time ")
-    if cancel == 'q' :
-        print("Shutting down signals, exiting...")
-        break
+while not sp.exit_now:
+    pass
+print ("Shutting down signals, exiting...")
 
 generator.cancel()
 pi.stop()
