@@ -32,9 +32,11 @@ TRIGGER4_DUTY = 0.5
 TRIGGER5_DUTY = 0.5
 TRIGGER6_DUTY = 0.5
 
-USE_SYNC = False
+USE_PPS_SYNC = False
 if PPS_INPUT_GPIO > 0:
-    USE_SYNC = True         # Enable synchronization to PPS input when available
+    USE_PPS_SYNC = True         # Enable synchronization to PPS input when available
+
+USE_TOS_SYNC = True
 
 SEND_DUMMY_NMEA = False     # Enable spoof NMEA messages
 NMEA_DESTINATION_PORT = 10110

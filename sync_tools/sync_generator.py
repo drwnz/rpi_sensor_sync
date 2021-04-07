@@ -225,16 +225,28 @@ class waveform_engine:
 
     def start_PPS_input_sychronization(self):
         """
-        Starts synchronization by enabling the callback functions for wave timing.
+        Starts synchronization with PPS input by enabling the callback functions for wave timing.
         """
         if (self.PPS_input_gpio != -1) and not self.callbacks_set:
-            self.PPS_input_callback = self.pi.callback(self.PPS_input_gpio, pigpio.RISING_EDGE, self.wave_callback)
-            self.PPS_output_callback = self.pi.callback(self.PPS_output_gpio, pigpio.RISING_EDGE, self.wave_callback)
+            self.PPS_input_callback = self.pi.callback(self.PPS_input_gpio, pigpio.RISING_EDGE, self.PPS_sync_wave_callback)
+            self.PPS_output_callback = self.pi.callback(self.PPS_output_gpio, pigpio.RISING_EDGE, self.PPS_sync_wave_callback)
             self.callbacks_set = True
         elif not self.callbacks_set:
             print ("Synchronization to external PPS already running")
         else:
             print ("Input and output PPS must be configured for external synchronization")
+
+    def start_TOS_sychronization(self):
+        """
+        Starts synchronization with TOS by enabling the callback functions for wave timing.
+        """
+        if (self.PPS_output_gpio != -1) and not self.callbacks_set:
+            self.PPS_output_callback = self.pi.callback(self.PPS_output_gpio, pigpio.RISING_EDGE, self.TOS_sync_wave_callback)
+            self.callbacks_set = True
+        elif not self.callbacks_set:
+            print ("Synchronization to TOS already running")
+        else:
+            print ("Output PPS must be configured for TOS synchronization")
 
     def stop_PPS_input_sychronization(self):
         """
@@ -245,7 +257,36 @@ class waveform_engine:
             self.PPS_output_callback.cancel()
             self.callbacks_set = False
 
-    def wave_callback(self, gpio, level, tick):
+    def stop_TOS_input_sychronization(self):
+        """
+        Stops synchronization by disabling the callback functions for wave timing.
+        """
+        if self.callbacks_set:
+            self.PPS_output_callback.cancel()
+            self.callbacks_set = False
+
+    def TOS_sync_wave_callback(self, gpio, level, tick):
+        """
+        Callback function for PPS waveform rising edges.
+        """
+        localticks = (time.time() % 1) * 1000000
+        slack = 0
+        if gpio == self.PPS_output_gpio:
+            self.PPS_output_tick = tick
+            print('Output: %d'%tick)
+            slack = localticks
+            if slack > self.PPS_slack_threshold and slack < (self.PPS_output_cycle_time - self.PPS_slack_threshold):
+                offset = self.PPS_output_offset + slack
+                if offset >= self.PPS_output_cycle_time:
+                    offset = offset - self.PPS_output_cycle_time
+                print('Offset: %d ... UPDATE'%offset)
+                self.PPS_output_offset = offset
+                self.update()
+                else:
+                    print('Offset: %d'%self.PPS_output_offset)
+                    pass
+
+    def PPS_sync_wave_callback(self, gpio, level, tick):
         """
         Callback function for PPS waveform rising edges.
         """

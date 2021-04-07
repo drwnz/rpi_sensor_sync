@@ -81,15 +81,15 @@ for i in range(num_triggers):
             print("Enter an integer between 0 and 31 that has not already been used, or n for none")
 
 syc_option = None
-use_sync = False
+use_pps_sync = False
 if (PPS_in != -1) and (PPS_out != -1):
     while not sync_option:
         sync_option = raw_input("Synchronize to input PPS? y = yes, n = no: ")
         if sync_option == 'y':
-            use_sync = True
+            use_pps_sync = True
             syc_option = True
         elif sync_option == 'n':
-            use_sync = False
+            use_pps_sync = False
             sync_option = True
         else:
             print("Enter either 'y' for yes or 'n' for no")
@@ -114,7 +114,7 @@ for output_trigger in trigger_out:
     generator.add_trigger_gpio(output_trigger[0], output_trigger[1], output_trigger[2])
     print ("Output trigger signal on GPIO%d with frequency %dHz and phase %d degrees"%(output_trigger[0], output_trigger[1], output_trigger[2]))
 
-if use_sync:
+if use_pps_sync:
     generator.start_PPS_input_sychronization()
     print ("Synchronizing to input PPS pulse")
 

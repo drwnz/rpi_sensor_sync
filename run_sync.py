@@ -27,11 +27,15 @@ for output_trigger_gpio, output_trigger_frequency, output_trigger_phase, output_
         generator.add_trigger_gpio(output_trigger_gpio, output_trigger_frequency, output_trigger_phase, output_trigger_duty)
         print ("Output trigger signal on GPIO%d with frequency %dHz, phase %d degrees and duty cycle of %.2f"%(output_trigger_gpio, output_trigger_frequency, output_trigger_phase, output_trigger_duty))
 
-if cfg.USE_SYNC and cfg.PPS_INPUT_GPIO != -1 and cfg.PPS_OUTPUT_GPIO != -1:
+if cfg.USE_PPS_SYNC and cfg.PPS_INPUT_GPIO != -1 and cfg.PPS_OUTPUT_GPIO != -1:
     generator.start_PPS_input_sychronization()
     print ("Synchronizing to input PPS pulse")
 
-if cfg.SEND_DUMMY_NMEA and cfg.USE_SYNC:
+if cfg.USE_TOS_SYNC and cfg.PPS_OUTPUT_GPIO != -1:
+    generator.start_TOS_input_sychronization()
+    print ("Synchronizing to input PPS pulse")
+
+if cfg.SEND_DUMMY_NMEA and cfg.USE_PPS_SYNC:
     if utils.check_ip_port_open(cfg.NMEA_DESTINATION_HOST, cfg.NMEA_DESTINATION_PORT):
         generator.start_NMEA_spoof(cfg.NMEA_DESTINATION_PORT, cfg.NMEA_DESTINATION_HOST)
         print ("Generating (fake) NMEA messages")
