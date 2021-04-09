@@ -42,11 +42,11 @@ class waveform_engine:
         self.PPS_output_gpio = -1
         self.PPS_output_cycle_time = 1000000      # PPS output cycle time in microseconds, measured
         self.PPS_duty_cycle_fraction = 0.2
-        self.PPS_output_tick = 0.0
         self.PPS_output_offset = 0.0              # PPS offset in microseconds
         self.PPS_slack_threshold = 500            # PPS slack limit requiring correction in microseconds
         self.PPS_overtime_reject = 1100000.0      # Reject PPS frequency measurement if it has been too long (GPS lost)
         self.skip_next_PPS_output_tick = False    # Skips next output tick from being measured for timing (update creates double ticks)
+        self.PPS_output_last_tick = 0.0
 
 
         self.trigger_output_gpio = []
@@ -271,8 +271,8 @@ class waveform_engine:
         Callback function for PPS waveform rising edges.
         """
         local_time = time.time()
-        if gpio == self.PPS_output_gpio:
-            if not self.skip_next_PPS_output_tick:            
+        if gpio == self.PPS_output_gpio:               
+            if not self.skip_next_PPS_output_tick and tick > self.PPS_output_last_tick:            
                 slack = (local_time % 1) * 1000000.0 
                 #print('Slack: %f'%slack)
                 if slack < 500000:
@@ -292,6 +292,7 @@ class waveform_engine:
                     pass
             else:
                 self.skip_next_PPS_output_tick = False
+            self.PPS_output_last_tick = tick
 
     def PPS_sync_wave_callback(self, gpio, level, tick):
         """
@@ -310,11 +311,10 @@ class waveform_engine:
             #print('Input: %d'%tick)
 
         elif gpio == self.PPS_output_gpio:
-            self.PPS_output_tick = tick
             #print('Output: %d'%tick)
             if self.PPS_input_has_ticked:
                 self.PPS_input_has_ticked = False
-                slack = self.PPS_output_tick - self.PPS_input_tick
+                slack = tick - self.PPS_input_tick
                 #print('Slack: %d'%slack)
                 if slack > self.PPS_slack_threshold and slack < (self.PPS_output_cycle_time - self.PPS_slack_threshold):
                     offset = self.PPS_output_offset + slack
