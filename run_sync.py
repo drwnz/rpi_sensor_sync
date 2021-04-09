@@ -32,8 +32,8 @@ if cfg.USE_PPS_SYNC and cfg.PPS_INPUT_GPIO != -1 and cfg.PPS_OUTPUT_GPIO != -1:
     print ("Synchronizing to input PPS pulse")
 
 if cfg.USE_TOS_SYNC and cfg.PPS_OUTPUT_GPIO != -1:
-    generator.start_TOS_input_sychronization()
-    print ("Synchronizing to input PPS pulse")
+    generator.start_TOS_sychronization()
+    print ("Synchronizing to ToS")
 
 if cfg.SEND_DUMMY_NMEA and cfg.USE_PPS_SYNC:
     if utils.check_ip_port_open(cfg.NMEA_DESTINATION_HOST, cfg.NMEA_DESTINATION_PORT):
